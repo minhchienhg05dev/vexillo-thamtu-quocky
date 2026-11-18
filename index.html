@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Trò chơi đoán luật kết hợp Apriori trên 194 quốc kỳ UCI Flags – Nhóm 7, Khai phá dữ liệu.">
+<meta name="color-scheme" content="light dark">
+<title>Thám tử quốc kỳ Vexillo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one phone-first column (max 600px), like a field notebook; tabs on top, game card below. Palette follows the group's slide deck: navy ink, soft blue cards, flag-gold marker, green for correct. */
+:root {
+  --bg: #ffffff;
+  --surface: #f2f6fb;
+  --surface-2: #e8eff7;
+  --line: #d6e0eb;
+  --ink: #1b2d44;
+  --muted: #5b6b80;
+  --accent: #23578f;
+  --accent-ink: #ffffff;
+  --gold: #c8922a;
+  --good: #1d7f53;
+  --good-bg: #e7f5ee;
+  --bad: #b5402a;
+  --bad-bg: #fbeee9;
+  --font: "Be Vietnam Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1722; --surface: #172333; --surface-2: #1e2d41; --line: #2c3d54;
+    --ink: #e7eef7; --muted: #9fb0c5; --accent: #6fa6e0; --accent-ink: #0f1722;
+    --gold: #e0ad4c; --good: #5cc795; --good-bg: #16332a; --bad: #f08a6f; --bad-bg: #3a221d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1722; --surface: #172333; --surface-2: #1e2d41; --line: #2c3d54;
+  --ink: #e7eef7; --muted: #9fb0c5; --accent: #6fa6e0; --accent-ink: #0f1722;
+  --gold: #e0ad4c; --good: #5cc795; --good-bg: #16332a; --bad: #f08a6f; --bad-bg: #3a221d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+.wrap { max-width: 600px; margin: 0 auto; display: grid; gap: 16px; }
+.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.eyebrow::before { content: ""; width: 8px; height: 8px; background: var(--gold); border-radius: 2px; }
+h1 { font-size: clamp(26px, 7vw, 34px); line-height: 1.15; margin: 4px 0 6px; font-weight: 800; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface); padding: 5px; border-radius: 12px; }
+.tab { font: inherit; font-weight: 700; font-size: 15px; border: 0; background: transparent; color: var(--muted); padding: 10px; border-radius: 9px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--bg); color: var(--ink); box-shadow: 0 1px 3px rgba(20, 40, 70, .14); }
+button:focus-visible, .chip-toggle:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.card { background: var(--surface); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; }
+.card.plain { background: var(--bg); border: 1px solid var(--line); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.between { justify-content: space-between; }
+.meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.score { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .3s; }
+.if-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px 6px 8px; font-weight: 700; }
+.plus { font-weight: 800; color: var(--muted); }
+.sw { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,.25); flex: none; }
+.glyph { width: 20px; height: 20px; flex: none; color: var(--accent); }
+.q { font-size: 19px; font-weight: 800; margin: 0; line-height: 1.3; text-wrap: balance; }
+.small { font-size: 14px; color: var(--muted); margin: 0; }
+.options { display: grid; gap: 10px; }
+.opt { font: inherit; text-align: left; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; cursor: pointer; transition: border-color .15s, background .15s; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt:disabled { cursor: default; }
+.opt.good { border-color: var(--good); background: var(--good-bg); }
+.opt.bad { border-color: var(--bad); background: var(--bad-bg); }
+.opt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.opt-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; }
+.lift-tag { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); font-size: 15px; }
+.bars { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 99px; }
+.bar.in > i { background: var(--accent); }
+.bar.all > i { background: var(--muted); opacity: .55; }
+.btn { font: inherit; font-weight: 700; border-radius: 12px; padding: 12px 16px; cursor: pointer; border: 2px solid transparent; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.wide { width: 100%; }
+.feedback { border-radius: var(--r); padding: 16px; display: grid; gap: 10px; }
+.feedback.good { background: var(--good-bg); }
+.feedback.bad { background: var(--bad-bg); }
+.verdict { font-size: 18px; font-weight: 800; margin: 0; }
+.feedback.good .verdict { color: var(--good); }
+.feedback.bad .verdict { color: var(--bad); }
+.calc { display: grid; gap: 6px; font-variant-numeric: tabular-nums; font-size: 15px; }
+.calc b { font-weight: 800; }
+.calc > div { padding-left: 100px; text-indent: -100px; }
+.calc .k { display: inline-block; width: 100px; text-indent: 0; color: var(--muted); font-weight: 600; }
+.names { font-size: 14px; color: var(--muted); margin: 0; }
+.big { font-size: 44px; font-weight: 800; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.group-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+.chip-toggle { font: inherit; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 99px; padding: 6px 12px 6px 8px; cursor: pointer; }
+.chip-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent); }
+.result-line { font-size: 17px; margin: 0; }
+.result-line b { font-variant-numeric: tabular-nums; }
+.flaglist { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.flaglist li { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 3px 9px; font-size: 14px; }
+.foot { font-size: 12px; color: var(--muted); text-align: center; margin: 4px 0 0; }
+details summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+details p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Nhóm 7 · Khai phá dữ liệu · Apriori</div>
+    <h1>Thám tử quốc kỳ</h1>
+    <p class="lede">Đoán luật kết hợp thật, tìm từ 194 quốc kỳ trong bộ dữ liệu UCI Flags.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Chế độ">
+    <button class="tab" role="tab" id="tab-play" aria-selected="true" aria-controls="view-play">Chơi đoán luật</button>
+    <button class="tab" role="tab" id="tab-explore" aria-selected="false" aria-controls="view-explore">Tra cứu quốc kỳ</button>
+  </div>
+
+  <section id="view-play" role="tabpanel" aria-labelledby="tab-play">
+    <div id="game"></div>
+  </section>
+
+  <section id="view-explore" role="tabpanel" aria-labelledby="tab-explore" hidden>
+    <div class="card">
+      <p class="small">Chọn một hoặc nhiều đặc trưng. Kết quả là các quốc kỳ có <b>đủ tất cả</b> đặc trưng đã chọn.</p>
+      <div id="explore-chips" style="display:grid;gap:12px"></div>
+    </div>
+    <div class="card plain" id="explore-result" style="margin-top:12px"></div>
+  </section>
+
+  <p class="foot">Dữ liệu: UCI Machine Learning Repository, Flags (1990), DOI 10.24432/C52C7Z · Ngưỡng MinSup 10%, MinConf 60%, Lift &gt; 1.<br>Tên quốc gia giữ nguyên theo bộ dữ liệu gốc.</p>
+</div>
+
+<script id="flag-data" type="application/json">{"features":["red","green","blue","gold","white","black","orange","bars","stripes","circles","crosses","saltires","quarters","triangle","sunstars","crescent","icon","animate","text"],"rows":[["Afghanistan","1101110010000010100"],["Albania","1001010000000010010"],["Algeria","1100100100000011000"],["American-Samoa","1011101000000100110"],["Andorra","1011000100000000000"],["Angola","1001010010000010100"],["Anguilla","0010101010000000010"],["Antigua-Barbuda","1011110010000110000"],["Argentina","0010100010000000000"],["Argentine","0011100010000010000"],["Australia","1010100000111010000"],["Austria","1000100010000000000"],["Bahamas","0011010010000100000"],["Bahrain","1000100000000000000"],["Bangladesh","1100000001000000000"],["Barbados","0011010100000000100"],["Belgium","1001010100000000000"],["Belize","1111111011000000111"],["Benin","1100000000000010000"],["Bermuda","1111110001111000110"],["Bhutan","1000111001000000010"],["Bolivia","1101000010000000000"],["Botswana","0010110010000000000"],["Brazil","0111100001000010001"],["British-Virgin-Isles","1111101000111000111"],["Brunei","1001110000000100111"],["Bulgaria","1111100010000010110"],["Burkina","1101000010000010000"],["Burma","1010100000001010110"],["Burundi","1100100001010010000"],["Cameroon","1101000100000010000"],["Canada","1000100100000000010"],["Cape-Verde-Islands","1101011110000010010"],["Cayman-Islands","1111101001111010111"],["Central-African-Republic","1111100100000010000"],["Chad","1011000100000000000"],["Chile","1010100010001010000"],["China","1001000000000010000"],["Colombia","1011000010000000000"],["Comorro-Islands","0100100000000011000"],["Congo","1101000000000010110"],["Cook-Islands","1010100001111010000"],["Costa-Rica","1010100010000000000"],["Cuba","1010100010000110000"],["Cyprus","0101100000000000110"],["Czechoslovakia","1010100000000100000"],["Denmark","1000100000100000000"],["Djibouti","1110100000000110000"],["Dominica","1111110001000010010"],["Dominican-Republic","1010100000100000000"],["Ecuador","1011000010000000000"],["Egypt","1001110010000000011"],["El-Salvador","0010100010000000000"],["Equatorial-Guinea","1110100010000100000"],["Ethiopia","1101000010000000000"],["Faeroes","1010100000100000000"],["Falklands-Malvinas","1111100001111000111"],["Fiji","1111101000111000110"],["Finland","0010100000100000000"],["France","1010100100000000000"],["French-Guiana","1010100100000000000"],["French-Polynesia","1011110011000010100"],["Gabon","0111000010000000000"],["Gambia","1110100010000000000"],["Germany-DDR","1001010010000000100"],["Germany-FRG","1001010010000000000"],["Ghana","1101010010000010000"],["Gibraltar","1001100010000000100"],["Greece","0010100010101000000"],["Greenland","1000100001000000000"],["Grenada","1101000001000110010"],["Guam","1111101000000000111"],["Guatemala","0010100100000000000"],["Guinea","1101000100000000000"],["Guinea-Bissau","1101010110000010000"],["Guyana","1101110000000100000"],["Haiti","1000010100000000000"],["Honduras","0010100010000010000"],["Hong-Kong","1111101001111000111"],["Hungary","1100100010000000000"],["Iceland","1010100000100000000"],["India","0110101011000000100"],["Indonesia","1000100010000000000"],["Iran","1100100010000000101"],["Iraq","1100110010000010000"],["Ireland","0100101100000000000"],["Israel","0010100010000010000"],["Italy","1100100100000000000"],["Ivory-Coast","1100100100000000000"],["Jamaica","0101010000010100000"],["Japan","1000100001000010000"],["Jordan","1100110010000110000"],["Kampuchea","1001000000000000100"],["Kenya","1100110011000000100"],["Kiribati","1011100000000010110"],["Kuwait","1100110010000000000"],["Laos","1010100011000000000"],["Lebanon","1100101010000000010"],["Lesotho","1110100100000000100"],["Liberia","1010100010001010000"],["Libya","0100000000000000000"],["Liechtenstein","1011000010000000100"],["Luxembourg","1010100010000000000"],["Malagasy","1100100110000000000"],["Malawi","1100010010000010000"],["Malaysia","1011100010001011000"],["Maldive-Islands","1100100000000001000"],["Mali","1101000100000000000"],["Malta","1000110100100000100"],["Marianas","0010100000000010100"],["Mauritania","0101000000000011000"],["Mauritius","1111000010000000000"],["Mexico","1100101100000000010"],["Micronesia","0010100000000010000"],["Monaco","1000100010000000000"],["Mongolia","1011000101000111100"],["Montserrat","1111110000111000110"],["Morocco","1100000000000010000"],["Mozambique","1101110010000110100"],["Nauru","0011100010000010000"],["Nepal","0010101000000011000"],["Netherlands","1010100010000000000"],["Netherlands-Antilles","1010100010000010000"],["New-Zealand","1010100000111010000"],["Nicaragua","0010100010000000000"],["Niger","0100101011000000000"],["Nigeria","0100100100000000000"],["Niue","1011100001111010000"],["North-Korea","1010100011000010000"],["North-Yemen","1100110010000010000"],["Norway","1010100000100000000"],["Oman","1100100010000000100"],["Pakistan","0100100100000011000"],["Panama","1010100000001010000"],["Papua-New-Guinea","1001110000000110010"],["Parguay","1111110011000010111"],["Peru","1000100100000000000"],["Philippines","1011100000000110000"],["Poland","1000100010000000000"],["Portugal","1111100001000000100"],["Puerto-Rico","1010100010000110000"],["Qatar","0000101000000000000"],["Romania","1111101100000010111"],["Rwanda","1101010100000000001"],["San-Marino","0010100010000000000"],["Sao-Tome","1101010010000110000"],["Saudi-Arabia","0100100000000000101"],["Senegal","1101000100000010000"],["Seychelles","1100100000000000000"],["Sierra-Leone","0110100010000000000"],["Singapore","1000100010000011000"],["Soloman-Islands","0111100000000110000"],["Somalia","0010100000000010000"],["South-Africa","1110101010110000000"],["South-Korea","1010110001000000100"],["South-Yemen","1010110010000110000"],["Spain","1001000010000000000"],["Sri-Lanka","0101001100000000110"],["St-Helena","1111101000111000100"],["St-Kitts-Nevis","1101110000000110000"],["St-Lucia","0011110000000100000"],["St-Vincent","0111100100000000111"],["Sudan","1100110010000100000"],["Surinam","1101100010000010000"],["Swaziland","1011111010000000100"],["Sweden","0011000000100000000"],["Switzerland","1000100000100000000"],["Syria","1100110010000010000"],["Taiwan","1010100001001010000"],["Tanzania","0111010000000100000"],["Thailand","1010100010000000000"],["Togo","1101100010001010000"],["Tonga","1000100000101000000"],["Trinidad-Tobago","1000110000000100000"],["Tunisia","1000100001000011000"],["Turkey","1000100000000011000"],["Turks-Cocos-Islands","1111101000111000110"],["Tuvalu","1011100000111010000"],["UAE","1100110110000000000"],["Uganda","1001110011000000010"],["UK","1010100000110000000"],["Uruguay","0011100010001010000"],["US-Virgin-Isles","1111100000000000111"],["USA","1010100010001010000"],["USSR","1001000000000010100"],["Vanuatu","1101010000000100010"],["Vatican-City","1001110100000000100"],["Venezuela","1111111010000010110"],["Vietnam","1001000000000010000"],["Western-Samoa","1010100000001010000"],["Yugoslavia","1011100010000010000"],["Zaire","1101001001000000110"],["Zambia","1100011100000000010"],["Zimbabwe","1101110010000110110"]]}</script>
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("flag-data").textContent);
+  var F = DATA.features;
+  var N = DATA.rows.length;
+  var MIN_COUNT = Math.ceil(N * 0.10);
+  var MIN_CONF = 0.60;
+
+  var LABEL = {
+    red: "Màu đỏ", green: "Màu xanh lá", blue: "Màu xanh dương", gold: "Màu vàng",
+    white: "Màu trắng", black: "Màu đen", orange: "Màu cam",
+    bars: "Sọc dọc", stripes: "Sọc ngang", circles: "Hình tròn", crosses: "Chữ thập",
+    saltires: "Chữ thập chéo", quarters: "Chia 4 ô", triangle: "Hình tam giác",
+    sunstars: "Mặt trời / ngôi sao", crescent: "Trăng lưỡi liềm",
+    icon: "Hình đồ vật", animate: "Hình sinh vật", text: "Chữ viết"
+  };
+  var GROUPS = [
+    ["Màu sắc", ["red", "green", "blue", "gold", "white", "black", "orange"]],
+    ["Biểu tượng", ["crescent", "triangle", "icon", "animate", "text"]],
+    ["Hình học", ["bars", "stripes", "circles", "crosses", "saltires", "quarters", "sunstars"]]
+  ];
+  var SWATCH = { red: "#d7263d", green: "#1e8a5a", blue: "#2563a8", gold: "#e3a72a", white: "#ffffff", black: "#1a1a1a", orange: "#e07b24" };
+  var GLYPH = {
+    bars: '<rect x="4" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1" opacity=".5"/><rect x="16" y="4" width="4" height="16" rx="1"/>',
+    stripes: '<rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1" opacity=".5"/><rect x="4" y="16" width="16" height="4" rx="1"/>',
+    circles: '<circle cx="12" cy="12" r="7"/>',
+    crosses: '<rect x="10" y="3" width="4" height="18" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/>',
+    saltires: '<rect x="10" y="2" width="4" height="20" rx="1" transform="rotate(45 12 12)"/><rect x="10" y="2" width="4" height="20" rx="1" transform="rotate(-45 12 12)"/>',
+    quarters: '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1" opacity=".4"/><rect x="3" y="13" width="8" height="8" rx="1" opacity=".4"/>',
+    triangle: '<path d="M3 3 L19 12 L3 21 Z"/>',
+    sunstars: '<path d="M12 2.5l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 16.8 6.2 20l1.4-6.4L2.7 9.2l6.5-.7z"/>',
+    crescent: '<path d="M15 3a9 9 0 1 0 6 15.5A7.5 7.5 0 0 1 15 3z"/>',
+    icon: '<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/>',
+    animate: '<path d="M2 10c3-1 5 0 7 2 1-3 4-6 9-6-1 2-1 4-3 5l5 1-6 2c-2 3-6 5-10 4l3-3c-2 0-4-2-5-5z"/>',
+    text: '<path d="M4 19 L9 5 h2 l5 14 h-3l-1.2-3.6H7.2L6 19zm4-6.4h3.4L9.7 7.4z"/><rect x="17" y="13" width="4" height="6" rx="1"/>'
+  };
+
+  var masks = {};
+  F.forEach(function (f, j) { masks[f] = DATA.rows.map(function (r) { return r[1].charAt(j) === "1"; }); });
+  function has(items) { return DATA.rows.map(function (_, i) { return items.every(function (f) { return masks[f][i]; }); }); }
+  function count(items) { return has(items).filter(Boolean).length; }
+  function namesWhere(mask) { var out = []; mask.forEach(function (v, i) { if (v) out.push(DATA.rows[i][0].replace(/-/g, " ")); }); return out; }
+
+  var nf2 = new Intl.NumberFormat("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function pct(x, d) { return new Intl.NumberFormat("vi-VN", { minimumFractionDigits: d, maximumFractionDigits: d }).format(x * 100) + "%"; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function mark(f) {
+    if (SWATCH[f]) return '<span class="sw" style="background:' + SWATCH[f] + '" aria-hidden="true"></span>';
+    return '<svg class="glyph" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + GLYPH[f] + "</svg>";
+  }
+  function chip(f) { return '<span class="chip">' + mark(f) + esc(LABEL[f]) + "</span>"; }
+  function chipList(items) { return items.map(chip).join('<span class="plus">+</span>'); }
+
+  /* Same rules as the notebook: IF 1-2 items, THEN 1 item, n(IF∪THEN) ≥ 20, Confidence ≥ 60%, Lift > 1 */
+  function buildQuestionBank() {
+    var ifs = [];
+    F.forEach(function (a, i) {
+      ifs.push([a]);
+      for (var k = i + 1; k < F.length; k++) ifs.push([a, F[k]]);
+    });
+    var bank = [];
+    ifs.forEach(function (ifItems) {
+      var nIf = count(ifItems);
+      if (nIf < MIN_COUNT) return;
+      var choices = [];
+      F.forEach(function (t) {
+        if (ifItems.indexOf(t) >= 0) return;
+        var nBoth = count(ifItems.concat([t]));
+        if (nBoth < MIN_COUNT) return;
+        var nThen = count([t]);
+        var conf = nBoth / nIf;
+        var lift = conf / (nThen / N);
+        if (conf >= MIN_CONF && lift > 1) choices.push({ then: t, nIf: nIf, nThen: nThen, nBoth: nBoth, conf: conf, lift: lift });
+      });
+      choices.sort(function (x, y) { return y.lift - x.lift; });
+      if (choices.length >= 3 && choices[0].lift - choices[1].lift > 0.10) bank.push({ ifItems: ifItems, ranked: choices.slice(0, 3) });
+    });
+    return bank;
+  }
+  var BANK = buildQuestionBank();
+  window.__vexilloBank = BANK;
+
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  var ROUNDS = Math.min(10, BANK.length);
+  var game = { stage: "intro" };
+  var root = document.getElementById("game");
+
+  function intro() {
+    game = { stage: "intro" };
+    root.innerHTML =
+      '<div class="card">' +
+        '<p class="q">Luật nào “nổi bật” nhất?</p>' +
+        '<ol class="steps">' +
+          "<li>Mỗi câu cho một điều kiện <b>NẾU</b>, ví dụ: lá cờ có màu xanh lá và hình đồ vật.</li>" +
+          "<li>Chọn 1 trong 3 đặc trưng <b>THÌ</b> đi kèm nổi bật nhất, tức có <b>Lift cao nhất</b>.</li>" +
+          "<li>Mỗi đáp án cho 2 con số: tỷ lệ trong nhóm thỏa NẾU và tỷ lệ trên toàn bộ 194 cờ. Lift = số thứ nhất ÷ số thứ hai.</li>" +
+        "</ol>" +
+        '<p class="small">Đúng: 2 điểm · Dùng gợi ý rồi đúng: 1 điểm · Sai: 0 điểm. Mỗi lượt có ' + ROUNDS + " câu, chọn ngẫu nhiên từ " + BANK.length + " câu tạo từ luật Apriori thật.</p>" +
+        '<details><summary>Vì sao không chọn theo Confidence?</summary><p>Màu trắng có trên 75% quốc kỳ, nên luật dẫn tới màu trắng thường có Confidence cao nhưng không bất ngờ. Lift so với mức nền mới cho biết đặc trưng nào thật sự đi kèm nhiều hơn bình thường.</p></details>' +
+        '<button class="btn primary wide" id="start">Bắt đầu chơi</button>' +
+      "</div>";
+    document.getElementById("start").addEventListener("click", start);
+  }
+
+  function start() {
+    game = { stage: "guess", questions: shuffle(BANK).slice(0, ROUNDS), round: 0, score: 0, hinted: false };
+    showRound();
+  }
+
+  function optionHTML(opt, idx, reveal) {
+    var overall = opt.nThen / N;
+    return '<button class="opt" data-i="' + idx + '" id="opt-' + idx + '">' +
+      '<span class="opt-head"><span class="opt-name">' + mark(opt.then) + esc(LABEL[opt.then]) + "</span>" +
+      '<span class="lift-tag" ' + (reveal ? "" : "hidden") + ">Lift " + nf2.format(opt.lift) + "×</span></span>" +
+      '<span class="bars">' +
+        "<span>Trong nhóm NẾU</span>" + '<span class="bar in"><i style="width:' + (opt.conf * 100).toFixed(1) + '%"></i></span><span><b>' + pct(opt.conf, 0) + "</b></span>" +
+        "<span>Trên 194 cờ</span>" + '<span class="bar all"><i style="width:' + (overall * 100).toFixed(1) + '%"></i></span><span>' + pct(overall, 0) + "</span>" +
+      "</span></button>";
+  }
+
+  function showRound() {
+    var q = game.questions[game.round];
+    game.stage = "guess";
+    game.hinted = false;
+    game.options = shuffle(q.ranked);
+    var ifMask = has(q.ifItems);
+    var examples = namesWhere(ifMask);
+    root.innerHTML =
+      '<div class="card">' +
+        '<div class="row between"><span class="meta">Câu ' + (game.round + 1) + "/" + game.questions.length + '</span><span class="score">' + game.score + " điểm</span></div>" +
+        '<div class="progress" aria-hidden="true"><i style="width:' + (100 * game.round / game.questions.length) + '%"></i></div>' +
+        '<div class="if-label">Nếu lá cờ có</div>' +
+        '<div class="chips">' + chipList(q.ifItems) + "</div>" +
+        '<p class="small"><b>' + q.ranked[0].nIf + " quốc kỳ</b> thỏa điều kiện này, ví dụ " + esc(examples.slice(0, 4).join(", ")) + ".</p>" +
+        '<p class="q">…thì đặc trưng nào đi kèm nổi bật nhất?</p>' +
+        '<div class="options" id="options">' + game.options.map(function (o, i) { return optionHTML(o, i, false); }).join("") + "</div>" +
+        '<button class="btn ghost wide" id="hint">Gợi ý: xem Lift (câu này còn tối đa 1 điểm)</button>' +
+        '<div id="fb"></div>' +
+      "</div>";
+    Array.prototype.forEach.call(root.querySelectorAll(".opt"), function (b) {
+      b.addEventListener("click", function () { choose(Number(b.getAttribute("data-i"))); });
+    });
+    document.getElementById("hint").addEventListener("click", hint);
+  }
+
+  function hint() {
+    if (game.stage !== "guess" || game.hinted) return;
+    game.hinted = true;
+    Array.prototype.forEach.call(root.querySelectorAll(".lift-tag"), function (t) { t.hidden = false; });
+    var h = document.getElementById("hint");
+    h.disabled = true;
+    h.textContent = "Đã mở gợi ý: trả lời đúng được 1 điểm";
+  }
+
+  function choose(idx) {
+    if (game.stage !== "guess") return;
+    game.stage = "reveal";
+    var q = game.questions[game.round];
+    var best = q.ranked[0];
+    var picked = game.options[idx];
+    var correct = picked.then === best.then;
+    var pts = correct ? (game.hinted ? 1 : 2) : 0;
+    game.score += pts;
+    Array.prototype.forEach.call(root.querySelectorAll(".opt"), function (b, i) {
+      b.disabled = true;
+      var o = game.options[i];
+      if (o.then === best.then) b.classList.add("good");
+      else if (i === idx) b.classList.add("bad");
+    });
+    Array.prototype.forEach.call(root.querySelectorAll(".lift-tag"), function (t) { t.hidden = false; });
+    document.getElementById("hint").hidden = true;
+    root.querySelector(".score").textContent = game.score + " điểm";
+
+    var ifMask = has(q.ifItems);
+    var bothMask = has(q.ifItems.concat([best.then]));
+    var support = namesWhere(bothMask);
+    var except = namesWhere(ifMask.map(function (v, i) { return v && !bothMask[i]; }));
+    var ifText = q.ifItems.map(function (f) { return LABEL[f]; }).join(" + ");
+    var last = game.round + 1 === game.questions.length;
+    var others = q.ranked.slice(1).map(function (o) { return esc(LABEL[o.then]) + " " + nf2.format(o.lift) + "×"; }).join(", ");
+    var verdict = correct ? "Chính xác! +" + pts + " điểm" : "Chưa đúng, +0 điểm";
+
+    document.getElementById("fb").innerHTML =
+      '<div class="feedback ' + (correct ? "good" : "bad") + '">' +
+        '<p class="verdict">' + verdict + "</p>" +
+        '<p style="margin:0">Đáp án: <b>' + esc(LABEL[best.then]) + "</b> với Lift " + nf2.format(best.lift) + "×. Các lựa chọn còn lại: " + others + ".</p>" +
+        '<div class="calc">' +
+          '<div><span class="k">Có NẾU</span><b>' + best.nIf + "</b> cờ (" + esc(ifText) + ")</div>" +
+          '<div><span class="k">Có THÌ</span><b>' + best.nThen + "</b> cờ (" + esc(LABEL[best.then]) + ")</div>" +
+          '<div><span class="k">Có cả hai</span><b>' + best.nBoth + "</b> cờ</div>" +
+          '<div><span class="k">Support</span>' + best.nBoth + " ÷ " + N + " = <b>" + pct(best.nBoth / N, 2) + "</b></div>" +
+          '<div><span class="k">Confidence</span>' + best.nBoth + " ÷ " + best.nIf + " = <b>" + pct(best.conf, 2) + "</b></div>" +
+          '<div><span class="k">Lift</span>(' + best.nBoth + "/" + best.nIf + ") ÷ (" + best.nThen + "/" + N + ") = <b>" + nf2.format(best.lift) + "×</b></div>" +
+        "</div>" +
+        '<p class="names"><b>Ví dụ có cả hai:</b> ' + esc(support.slice(0, 6).join(", ")) + (support.length > 6 ? "…" : "") + "</p>" +
+        (except.length ? '<p class="names"><b>Ngoại lệ (có NẾU, thiếu THÌ):</b> ' + esc(except.slice(0, 6).join(", ")) + (except.length > 6 ? "…" : "") + "</p>" : "") +
+        '<button class="btn primary wide" id="next">' + (last ? "Xem kết quả" : "Câu tiếp theo") + "</button>" +
+      "</div>";
+    document.getElementById("next").addEventListener("click", next);
+    document.getElementById("next").focus({ preventScroll: true });
+    document.getElementById("fb").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function next() {
+    if (game.stage !== "reveal") return;
+    game.round += 1;
+    if (game.round < game.questions.length) { showRound(); window.scrollTo({ top: root.offsetTop - 12, behavior: "smooth" }); return; }
+    game.stage = "done";
+    var max = game.questions.length * 2;
+    var ratio = game.score / max;
+    var msg = ratio >= 0.8 ? "Thám tử xuất sắc: bạn đọc Lift rất chuẩn." : ratio >= 0.5 ? "Khá tốt. Nhớ so sánh với tỷ lệ nền, đừng chỉ nhìn Confidence." : "Mẹo: đáp án đúng thường là đặc trưng hiếm trên toàn bộ dữ liệu nhưng rất phổ biến trong nhóm NẾU.";
+    root.innerHTML =
+      '<div class="card">' +
+        '<div class="if-label">Kết quả</div>' +
+        '<div class="row" style="align-items:baseline;gap:6px"><span class="big">' + game.score + '</span><span class="meta" style="font-size:18px">/ ' + max + " điểm</span></div>" +
+        '<p style="margin:0">' + msg + "</p>" +
+        '<button class="btn primary wide" id="again">Chơi lượt mới</button>' +
+      "</div>";
+    document.getElementById("again").addEventListener("click", start);
+  }
+
+  /* Explorer */
+  var picked = ["green", "icon"];
+  var chipsBox = document.getElementById("explore-chips");
+  chipsBox.innerHTML = GROUPS.map(function (g) {
+    return '<div style="display:grid;gap:8px"><p class="group-title">' + g[0] + '</p><div class="chips">' +
+      g[1].map(function (f) { return '<button class="chip-toggle" id="pick-' + f + '" data-f="' + f + '" aria-pressed="false">' + mark(f) + esc(LABEL[f]) + "</button>"; }).join("") +
+      "</div></div>";
+  }).join("");
+  Array.prototype.forEach.call(chipsBox.querySelectorAll(".chip-toggle"), function (b) {
+    b.addEventListener("click", function () {
+      var f = b.getAttribute("data-f");
+      var at = picked.indexOf(f);
+      if (at >= 0) picked.splice(at, 1); else picked.push(f);
+      renderExplore();
+    });
+  });
+  function renderExplore() {
+    Array.prototype.forEach.call(chipsBox.querySelectorAll(".chip-toggle"), function (b) {
+      b.setAttribute("aria-pressed", picked.indexOf(b.getAttribute("data-f")) >= 0 ? "true" : "false");
+    });
+    var out = document.getElementById("explore-result");
+    if (!picked.length) {
+      out.innerHTML = '<p class="result-line">Chưa chọn đặc trưng nào: hiển thị đủ <b>' + N + "</b> quốc kỳ.</p>";
+      return;
+    }
+    var mask = has(picked);
+    var names = namesWhere(mask);
+    out.innerHTML =
+      '<p class="result-line"><b>' + names.length + "/" + N + "</b> quốc kỳ (" + pct(names.length / N, 1) + ") có đủ:</p>" +
+      '<div class="chips">' + chipList(picked) + "</div>" +
+      (names.length ? '<ul class="flaglist">' + names.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>" : '<p class="small">Không có quốc kỳ nào có đủ các đặc trưng này.</p>');
+  }
+  renderExplore();
+
+  /* Tabs */
+  var tabs = [["tab-play", "view-play"], ["tab-explore", "view-explore"]];
+  tabs.forEach(function (t) {
+    document.getElementById(t[0]).addEventListener("click", function () {
+      tabs.forEach(function (u) {
+        var on = u[0] === t[0];
+        document.getElementById(u[0]).setAttribute("aria-selected", on ? "true" : "false");
+        document.getElementById(u[1]).hidden = !on;
+      });
+    });
+  });
+
+  intro();
+})();
+</script>
+
+</body>
+</html>
