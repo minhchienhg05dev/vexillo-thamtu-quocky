@@ -179,6 +179,8 @@ p,h1,h2,h3{margin:0}img{display:block;object-fit:contain;object-position:center}
   #flag-dialog{position:fixed}.dialog-card{grid-template-columns:1fr;gap:14px;padding:46px 18px 22px;width:min(560px,92vw);min-height:0;max-height:88dvh;overflow:auto}
   .dialog-card>div:first-child{min-height:0;padding:16px}.dialog-card img{height:150px}
 }
+
+.color-total{margin:2px 0 12px;padding:10px 12px;background:var(--soft)}.color-total b{display:block;font-size:15px;color:var(--deep);margin-bottom:7px}.color-total ul{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-wrap:wrap;gap:6px 12px}.color-total li{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--deep)}.color-total i{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.35);display:inline-block}.color-total small{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -229,6 +231,8 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
   const LABEL = {red:'Màu đỏ',green:'Xanh lá',blue:'Xanh dương',gold:'Màu vàng',white:'Màu trắng',black:'Màu đen',orange:'Màu cam',bars:'Sọc dọc',stripes:'Sọc ngang',circles:'Hình tròn',crosses:'Chữ thập',saltires:'Chữ thập chéo',quarters:'Chia bốn ô',triangle:'Tam giác',sunstars:'Mặt trời / sao',crescent:'Trăng lưỡi liềm',icon:'Hình đồ vật',animate:'Hình sinh vật',text:'Chữ viết'};
   const GROUPS = [['Màu sắc',['red','green','blue','gold','white','black','orange']],['Biểu tượng',['crescent','triangle','icon','animate','text']],['Hình học',['bars','stripes','circles','crosses','saltires','quarters','sunstars']]];
   const COLORS = {red:'#cb3e47',green:'#2f8a5f',blue:'#2866a8',gold:'#d8a931',white:'#fff',black:'#222',orange:'#e87d2d'};
+  const COLOR_KEYS = ['red','green','blue','gold','white','black','orange'];
+  const COLOR_NAME = {red:'đỏ',green:'xanh lá',blue:'xanh dương',gold:'vàng',white:'trắng',black:'đen',orange:'cam'};
   const ICON = {bars:'▥',stripes:'☰',circles:'◯',crosses:'✚',saltires:'✕',quarters:'▦',triangle:'▲',sunstars:'★',crescent:'☾',icon:'◇',animate:'♞',text:'A'};
   const rowMasks = DATA.rows.map(r=>Object.fromEntries(F.map((f,j)=>[f,r[1][j]==='1'])));
   const matches = features => DATA.rows.map((r,i)=>features.every(f=>rowMasks[i][f]));
@@ -517,8 +521,12 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
     const info=meta(i);
     const period=info?info.period:'Hình cờ tham khảo';
     const quality=info?info.quality:'Chưa xác thực độc lập biến thể tương ứng với từng năm trong nguồn UCI.';
+    const present=COLOR_KEYS.filter(k=>rowMasks[i][k]);
+    const colorChips=present.map(k=>`<li><i style="background:${COLORS[k]}"></i>${COLOR_NAME[k]}</li>`).join('');
     dialogContent.innerHTML=`<div>${flag(i)}</div><div><p class="tiny-label">Bản ghi ${i+1} / ${N}</p><h2 id="dialog-title">${escapeText(name(i))}</h2>
-       <p class="note-period">${escapeText(period)}</p><p>${escapeText(quality)}</p>
+       <p class="note-period">${escapeText(period)}</p>
+       <div class="color-total"><b>Tổng số màu: ${present.length}</b><ul>${colorChips||'<li>Không có màu nào trong 7 màu của nhóm</li>'}</ul><small>Tính theo 7 màu của nhóm: đỏ, xanh lá, xanh dương, vàng, trắng, đen, cam.</small></div>
+       <p>${escapeText(quality)}</p>
        <p id="dialog-description">Đặc trưng dùng cho tính toán được lấy từ flag.data. Hình ảnh chỉ dùng để tra cứu và minh họa cho bản ghi.</p>
        <button class="btn primary" id="close-detail">Đóng chi tiết</button></div>`;
     dialog.hidden=false;
