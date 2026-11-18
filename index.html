@@ -363,7 +363,20 @@ details p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
     }
     document.getElementById("bunting").innerHTML = s;
   })();
-  document.getElementById("hero-flag").innerHTML = flagSVG(["green", "gold", "icon", "animate"], { shade: true, label: "Lá cờ ghép từ luật Xanh lá + Hình đồ vật → Hình sinh vật" });
+  /* Hero: Vietnam's flag (ratio 2:3, red field, centred five-pointed yellow star), with soft fold shading */
+  (function vietnamFlag() {
+    const R = 12, r = R * 0.381966, pts = [];
+    for (let k = 0; k < 10; k++) {
+      const a = (-90 + k * 36) * Math.PI / 180, rad = k % 2 ? r : R;
+      pts.push((30 + rad * Math.cos(a)).toFixed(2) + "," + (20 + rad * Math.sin(a)).toFixed(2));
+    }
+    document.getElementById("hero-flag").innerHTML =
+      '<svg viewBox="0 0 60 40" role="img" aria-label="Quốc kỳ Việt Nam"><defs>' +
+      '<clipPath id="vnc"><rect width="60" height="40" rx="2.5"/></clipPath>' +
+      '<linearGradient id="vns" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".35" stop-color="#000" stop-opacity=".12"/><stop offset=".62" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient></defs>' +
+      '<g clip-path="url(#vnc)"><rect width="60" height="40" fill="#da251d"/><polygon points="' + pts.join(" ") + '" fill="#ffff00"/><rect width="60" height="40" fill="url(#vns)"/></g>' +
+      '<rect x=".5" y=".5" width="59" height="39" rx="2.5" fill="none" stroke="rgba(23,40,61,.22)"/></svg>';
+  })();
 
   function pennantRow(results, total, current) {
     const W = 600, step = W / total;
