@@ -136,6 +136,7 @@ p,h1,h2,h3{margin:0}img{display:block;object-fit:contain;object-position:center}
 @media(max-height:790px){.answer-option{grid-template-columns:32px minmax(0,1fr)}.answer-option .option-info strong{font-size:clamp(19px,1.65vw,23px)}}
 @media(max-width:1100px){.answer-option{grid-template-columns:28px minmax(0,1fr)}.answer-option .option-info strong{font-size:19px}}
 
+.lift-hint{display:block;font-size:13px;color:var(--green);font-weight:600;font-variant-numeric:tabular-nums}.lift-hint b{font-weight:800}.lift-hint[hidden]{display:none!important}
 /* Responsive: phones, small tablets and short landscape screens get one scrolling column. Desktop layout above is unchanged. */
 @media (max-width:820px), (max-height:540px){
   html,body{height:auto;overflow-y:auto}
@@ -344,7 +345,7 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
         <h1><span class="title-line">Thám tử</span><span class="title-line second">quốc kỳ</span></h1>
         <p class="intro-desc">Chọn đặc trưng xuất hiện cùng màu sắc và biểu tượng trên quốc kỳ. So sánh bằng Lift. Mỗi câu có 2 phút.</p>
         <div class="rule-preview"><span class="rule-heading">Một câu hỏi sẽ như thế này</span><div class="rule-flow"><div><small>Nếu</small><b>Cờ có màu đỏ</b></div><span class="connector" aria-hidden="true">→</span><div><small>Thì</small><b>Đặc trưng nào đi cùng?</b></div></div></div>
-        <div class="intro-cta"><button class="btn primary" id="start">Bắt đầu ${ROUNDS} câu</button><span class="small-note">Tối đa 20 điểm.<br>Có gợi ý: 1 điểm khi đúng.</span></div>
+        <div class="intro-cta"><button class="btn primary" id="start">Bắt đầu ${ROUNDS} câu</button><span class="small-note">Tối đa 20 điểm.<br>Xem Lift gợi ý: chỉ 1 điểm khi đúng.</span></div>
       </div><div class="intro-art" aria-label="Bộ sưu tập cờ từ dữ liệu">
         <div class="art-kicker"><span>Bộ sưu tập từ dữ liệu UCI Flags</span><span>19 đặc trưng</span></div>
         <div class="art-grid">${rows.slice(0,6).map((i,k)=>`<div class="art-flag" style="--i:${k}">${flag(i)}<span>${escapeText(name(i))}</span></div>`).join('')}</div>
@@ -373,9 +374,10 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
     return `<button class="answer-option" type="button" data-option="${i}" style="--i:${i}" aria-label="Đáp án ${i+1}: ${escapeText(LABEL[o.then])}">
       <span class="option-num">0${i+1}</span>
       <span class="option-info"><strong>${featureMark(o.then)} ${escapeText(LABEL[o.then])}</strong>
-        <span class="hint-metrics" ${game.hinted?'':'hidden'}>
+        <span class="hint-metrics">
           <span class="ratio"><span>Trong nhóm NẾU</span><i><em style="--value:${pct(o.conf)}"></em></i><b>${pct(o.conf)}</b></span>
           <span class="ratio secondary"><span>Trên 194 cờ</span><i><em style="--value:${pct(base)}"></em></i><b>${pct(base)}</b></span>
+          <span class="lift-hint" ${game.hinted?'':'hidden'}>Lift = ${pct(o.conf)} ÷ ${pct(base)} ≈ <b>${num(o.lift)}×</b></span>
         </span>
       </span></button>`;
   }
@@ -384,8 +386,8 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
     return `<div class="quiz">${questionLeft(q)}<div class="answer-board">
       <div class="answer-top"><div><p class="tiny-label">Chọn vế THÌ</p><h2>Đặc trưng nào có Lift lớn nhất?</h2></div><span class="page-indicator">Chọn 1 đáp án</span></div>
       <div class="option-list">${game.options.map((o,i)=>option(o,i)).join('')}</div>
-      <div class="hint-row"><p id="hint-copy">${game.hinted?'So sánh hai tỷ lệ để tìm Lift cao nhất.':'Các tỷ lệ được ẩn cho đến khi dùng gợi ý.'}</p>
-        <button class="btn ghost small" type="button" id="hint" ${game.hinted?'disabled':''}>${game.hinted?'Đã dùng gợi ý':'Xem gợi ý (đúng +1 điểm)'}</button></div>
+      <div class="hint-row"><p id="hint-copy">${game.hinted?'Đã hiện Lift của từng đáp án.':'Tự tính Lift = tỷ lệ trong nhóm NẾU ÷ tỷ lệ trên 194 cờ, rồi chọn đáp án lớn nhất.'}</p>
+        <button class="btn ghost small" type="button" id="hint" ${game.hinted?'disabled':''}>${game.hinted?'Đã xem Lift':'Gợi ý: xem Lift (đúng chỉ +1 điểm)'}</button></div>
     </div></div>`;
   }
   function renderReveal(){
@@ -423,10 +425,10 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
       if(game.stage!=='guess'||game.hinted||isTransitioning)return;
       if(remainingSeconds()===0){finishAnswer(null,true);return;}
       game.hinted=true;
-      hint.disabled=true;hint.textContent='Đã dùng gợi ý';
-      document.querySelectorAll('.hint-metrics').forEach(node=>node.hidden=false);
+      hint.disabled=true;hint.textContent='Đã xem Lift';
+      document.querySelectorAll('.lift-hint').forEach(node=>node.hidden=false);
       const note=document.getElementById('hint-copy');
-      if(note)note.textContent='So sánh hai tỷ lệ để tìm Lift cao nhất.';
+      if(note)note.textContent='Đã hiện Lift của từng đáp án.';
     });
     const next=document.getElementById('next');if(next)next.addEventListener('click',()=>animateSwap(()=>{
       game.round++;if(game.round>=ROUNDS){game.stage='done';render();}else showQuestion();
