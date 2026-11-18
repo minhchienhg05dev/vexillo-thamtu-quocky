@@ -135,6 +135,49 @@ p,h1,h2,h3{margin:0}img{display:block;object-fit:contain;object-position:center}
 .answer-option .option-info strong{font-size:clamp(21px,1.8vw,27px)}
 @media(max-height:790px){.answer-option{grid-template-columns:32px minmax(0,1fr)}.answer-option .option-info strong{font-size:clamp(19px,1.65vw,23px)}}
 @media(max-width:1100px){.answer-option{grid-template-columns:28px minmax(0,1fr)}.answer-option .option-info strong{font-size:19px}}
+
+/* Responsive: phones, small tablets and short landscape screens get one scrolling column. Desktop layout above is unchanged. */
+@media (max-width:820px), (max-height:540px){
+  html,body{height:auto;overflow-y:auto}
+  #app{height:auto;min-height:100dvh;grid-template-rows:auto auto auto}
+  #masthead{position:sticky;top:0;grid-template-columns:1fr;gap:4px;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+  .identity{gap:10px}.brand-title{font-size:22px}.brand-subtitle{display:inline;font-size:11px}.header-tools{display:none}
+  .tabs{height:44px;gap:26px;justify-content:flex-start}.tab{font-size:14px}
+  #stage{height:auto;overflow:visible}.panel,.scene{height:auto;overflow:visible}
+  #transition-cover{display:none}
+  #footer{flex-wrap:wrap;gap:4px 12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}.footer-note{max-width:100%;white-space:normal}#footer>span:last-child{display:none}
+  .intro{grid-template-columns:1fr;height:auto}.intro-copy{padding:26px 16px 24px}
+  .intro h1{font-size:clamp(40px,12vw,58px);margin:12px 0 14px;max-width:none}.intro-desc{font-size:16px}
+  .rule-preview{width:100%;margin-top:20px}.intro-cta{flex-wrap:wrap;margin-top:20px}.intro-cta .btn{flex:1 1 220px}.small-note{max-width:none}
+  .intro-art{padding:18px 16px 20px}.art-grid{flex:none;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}.art-flag:nth-child(n+6){display:none}
+  .art-flag{padding:12px 6px}.art-flag:first-child{grid-column:1/-1;grid-row:auto;padding:18px 10px}
+  .art-flag img{height:54px;max-height:none}.art-flag:first-child img{height:150px;width:min(90%,300px);max-height:none}.art-flag span{font-size:11px}
+  .quiz{grid-template-columns:1fr;height:auto}
+  .question-board{padding:18px 16px 20px}.quiz-stats{grid-template-columns:auto 1fr auto}.question-timer{min-width:0}
+  .question-board h2{font-size:28px;margin:16px 0 10px;max-width:none}
+  .flag-showcase{flex:none;margin-top:16px}.flag-surface{height:auto;max-height:none;padding:14px}.flag-surface img{height:150px;max-height:150px}
+  .flag-index strong{font-size:36px}
+  .answer-board{height:auto;padding:20px 16px 24px;gap:12px}.answer-top{flex-direction:column;gap:6px}.answer-board h2{font-size:24px}
+  .option-list{flex:none;grid-template-rows:none}
+  .answer-option{grid-template-columns:30px minmax(0,1fr);gap:10px;padding:14px}.answer-option .option-num{font-size:19px}.answer-option .option-info strong{font-size:19px}
+  .hint-metrics .ratio{grid-template-columns:96px minmax(0,1fr) 44px;gap:6px;font-size:11.5px}
+  .hint-row{flex-direction:column;align-items:stretch;gap:8px}.hint-row .btn{width:100%;min-height:42px}.hint-row p{max-width:none}
+  .quiz:has(.answer-board.reveal) .answer-board{order:-1}
+  .answer-board.reveal{gap:12px}.lift-item{grid-template-columns:108px minmax(0,1fr) 52px;gap:8px}
+  .metric{padding:8px 10px}.metric strong{font-size:20px}.formula{font-size:13px}.interpretation{font-size:12px}
+  .reveal-action{flex-wrap:wrap;margin-top:6px}.reveal-action .btn{flex:1 1 200px;min-height:46px}
+  .explore{grid-template-columns:1fr;height:auto}.explore-filter{padding:20px 16px;overflow:visible}
+  .filter-chip{font-size:13px;min-height:36px;white-space:normal}.filter-bottom{display:flex;margin-top:14px}
+  .explore-gallery{padding:20px 16px 24px}.gallery-top{flex-wrap:wrap}
+  .country-grid{flex:none;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:auto;overflow:visible}
+  .country-tile{padding:14px 8px}.country-tile img{height:64px}
+  .gallery-nav{flex-direction:column;align-items:stretch;gap:10px}.gallery-nav p{white-space:normal}.gallery-nav-buttons .btn{flex:1;min-height:42px}
+  .finish{grid-template-columns:1fr;height:auto}.finish-copy{padding:28px 16px}.finish-copy h1{font-size:40px}
+  .finish-score strong{font-size:84px}.finish-copy .btn{width:100%}.finish-copy #to-explore{margin-left:0!important}
+  .finish-breakdown{padding:28px 16px}.finish-count strong{font-size:88px}
+  #flag-dialog{position:fixed}.dialog-card{grid-template-columns:1fr;gap:14px;padding:46px 18px 22px;width:min(560px,92vw);min-height:0;max-height:88dvh;overflow:auto}
+  .dialog-card>div:first-child{min-height:0;padding:16px}.dialog-card img{height:150px}
+}
 </style>
 </head>
 <body>
@@ -509,6 +552,27 @@ window.VEXILLO_IMAGES={"files":{"ad":"data:image/webp;base64,UklGRhQNAABXRUJQVlA
   }, {capture: true});
 })();
 
+</script>
+<script>
+// Responsive helper: on small screens the page scrolls, so bring each new game screen into view.
+(() => {
+  const mq = window.matchMedia('(max-width:820px), (max-height:540px)');
+  const stage = document.getElementById('stage');
+  const head = document.getElementById('masthead');
+  new MutationObserver(() => {
+    if (!mq.matches) return;
+    const panel = stage.firstElementChild;
+    if (!panel) return;
+    const offset = head.offsetHeight;
+    if (panel.id === 'view-play') {
+      const y = Math.max(0, stage.getBoundingClientRect().top + window.scrollY - offset);
+      if (window.scrollY > y) window.scrollTo(0, y);
+    } else {
+      const gallery = stage.querySelector('.explore-gallery');
+      if (gallery && gallery.getBoundingClientRect().top < offset) window.scrollTo(0, gallery.getBoundingClientRect().top + window.scrollY - offset - 8);
+    }
+  }).observe(stage, { childList: true });
+})();
 </script>
 </body>
 </html>
